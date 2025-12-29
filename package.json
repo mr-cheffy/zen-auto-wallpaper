@@ -1,0 +1,28 @@
+{
+  "name": "zen-auto-wallpaper",
+  "version": "1.0.0",
+  "description": "Sync a set of wallpapers with your current zen space!",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mr-cheffy/zen-auto-wallpaper.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/mr-cheffy/zen-auto-wallpaper/issues"
+  },
+  "homepage": "https://github.com/mr-cheffy/zen-auto-wallpaper#readme",
+  "dependencies": {
+    "inquirer": "^13.1.0",
+    "lz4": "^0.6.5",
+    "wallpaper": "^7.2.1",
+    "watcher": "^2.3.1",
+    "when-exit": "^2.1.5"
+  }
+}
