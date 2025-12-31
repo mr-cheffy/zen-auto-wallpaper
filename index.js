@@ -36,7 +36,7 @@ const getFileNameFromId = (id) => {
 };
 
 const setWallpaperForSpace = (pathToImage) => {
-  return setWallpaper(`.wallpapers/${getFileNameFromId(pathToImage)}`));
+  return setWallpaper(`.wallpapers/${getFileNameFromId(pathToImage)}`);
 };
 
 const watchPrefsFileAndUpdateWallpapers = (prefsFile) => {
