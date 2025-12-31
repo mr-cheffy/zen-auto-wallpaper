@@ -101,7 +101,7 @@ const runWithProfile = async (profileName) => {
         type: "input",
         name: `space_${index}`,
         message: `Enter the image path for "${space.name}" (${space.uuid}) (Default current wallpaper):`,
-	      default: space.default ?? oldWallpaper,
+	default: space.default ?? oldWallpaper,
       })),
     ])
     .then(async (answers) => {
