@@ -9,7 +9,7 @@ const lz4 = require("lz4");
 
 const userHomeDir = process.env.HOME || process.env.USERPROFILE;
 const zenGlobalFile = os.platform() === "win32" ?
-  `${userHomeDir}\\AppData\\Roaming\\zen\\Profiles\\` :
+  `${userHomeDir}/AppData/Roaming/zen/Profiles/` :
   `${userHomeDir}/Library/Application Support/zen/Profiles/`;
 const defaultWallpapersDir = path.join(userHomeDir, "Documents/Wallpapers");
 
