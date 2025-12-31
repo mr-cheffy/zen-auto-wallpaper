@@ -1,5 +1,6 @@
 const path = require("path");
 const fs = require("fs");
+const os = require("os");
 const inquirer = require("inquirer").default;
 const whenExit = require("when-exit").default;
 const { getWallpaper, setWallpaper } = require("wallpaper");
@@ -7,7 +8,10 @@ const Watcher = require("watcher").default;
 const lz4 = require("lz4");
 
 const userHomeDir = process.env.HOME || process.env.USERPROFILE;
-const zenGlobalFile = `${userHomeDir}/Library/Application Support/zen/Profiles/`;
+const zenGlobalFile = os.platform() === "win32" ?
+  `${userHomeDir}\\AppData\\Roaming\\zen\\Profiles\\` :
+  `${userHomeDir}/Library/Application Support/zen/Profiles/`;
+const defaultWallpapersDir = path.join(userHomeDir, "Documents/Wallpapers");
 
 var decompressMozLZ4 = function (inputBuffer) {
   var outputBuffer;
@@ -32,7 +36,7 @@ const getFileNameFromId = (id) => {
 };
 
 const setWallpaperForSpace = (pathToImage) => {
-  return setWallpaper(`.wallpapers/${getFileNameFromId(pathToImage)}`);
+  return setWallpaper(`.wallpapers/${getFileNameFromId(pathToImage)}`));
 };
 
 const watchPrefsFileAndUpdateWallpapers = (prefsFile) => {
@@ -64,15 +68,32 @@ const runWithProfile = async (profileName) => {
   const prefsFile = path.join(profilePath, "prefs.js");
   const sessionFile = path.join(profilePath, "zen-sessions.jsonlz4");
   const sessionFileContent = decompressMozLZ4(fs.readFileSync(sessionFile));
-  let oldWallpaper = await getWallpaper();
-  moveFileToWallpapersDir(oldWallpaper, "default");
+  
+  let oldWallpaper;
+  try {
+    oldWallpaper = await getWallpaper();
+    moveFileToWallpapersDir(oldWallpaper, "default");
+  } catch {
+    console.log("Failed to backup old wallpaper.");
+  }
 
   whenExit(() => {
-    setWallpaperForSpace("default");
-    console.log("Restored old wallpaper.");
+    if (oldWallpaper) {
+      setWallpaperForSpace("default");
+      console.log("Restored old wallpaper.");
+    }
   });
 
   const spaces = sessionFileContent.spaces;
+
+  for (const space of spaces) {
+    const defaultName = space.name.replace(" ", "").toLowerCase() + ".jpg";
+    const defaultPath = path.join(defaultWallpapersDir, defaultName);
+    if (fs.existsSync(defaultPath)) {
+      space.default = defaultPath;
+    }
+  }
+
   // Ask for image path for each space
   inquirer
     .prompt([
@@ -80,12 +101,13 @@ const runWithProfile = async (profileName) => {
         type: "input",
         name: `space_${index}`,
         message: `Enter the image path for "${space.name}" (${space.uuid}) (Default current wallpaper):`,
-        default: oldWallpaper,
+	      default: space.default ?? oldWallpaper,
       })),
     ])
     .then(async (answers) => {
       spaces.forEach((space, index) => {
-        const imagePath = answers[`space_${index}`];
+        let imagePath = answers[`space_${index}`];
+	imagePath = path.isAbsolute(imagePath) ? imagePath : path.join(defaultWallpapersDir, imagePath);
         const storedPath = moveFileToWallpapersDir(imagePath, space.uuid);
         space.wallpaperPath = storedPath;
         console.log(
@@ -104,17 +126,22 @@ const runWithProfile = async (profileName) => {
 const availableProfiles = fs.readdirSync(zenGlobalFile).filter((file) => {
   return fs.statSync(path.join(zenGlobalFile, file)).isDirectory();
 });
-console.log("Available Zen Profiles:", availableProfiles);
-inquirer
-  .prompt([
-    {
-      type: "rawlist",
-      name: "profile",
-      message:
-        "Select a Zen profile to use for wallpaper (about:support to see current profile):",
-      choices: availableProfiles,
-    },
-  ])
-  .then((answers) => {
-    runWithProfile(answers.profile);
-  });
+if (availableProfiles.length > 1) {
+  inquirer
+    .prompt([
+      {
+        type: "rawlist",
+        name: "profile",
+        message:
+          "Select a Zen profile to use for wallpaper (about:support to see current profile):",
+        choices: availableProfiles,
+      },
+    ])
+    .then((answers) => {
+      runWithProfile(answers.profile);
+    });
+} else if (availableProfiles.length === 1) {
+  runWithProfile(availableProfiles[0]);
+} else {
+  console.error("No profiles found.");
+}
